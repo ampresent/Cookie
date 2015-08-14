@@ -4,42 +4,75 @@
 #include "stdlib.h"
 #include "string.h"
 #include "mpi.h"
+#include "math.h"
 
 typedef double(*func)(double);
+
+int myrank, size, count;
 
 double x(double x){
 	return x;
 }
 
-double trapezoid(int l,int r, func f){
-	return (f(r) + f(l)) * (r - l) * 0.5;
+double trapezoid(double l,double r, int block, func f){
+	int i;
+	double sum, a, b, delta;
+   
+	delta = (r - l) / block;
+	//printf("myrank=%d, l=%lf, r=%lf, block=%d\n",myrank, l, r, block);
+
+	for (i=0;i<block;i++){
+		a = delta * i;
+		b = delta * (i+1);
+		//printf("a = %lf\tb = %lf\n",l+a,l+b);
+		sum += (f(l+a) + f(l+b)) * delta * 0.5;
+	}
+	return sum;
+}
+
+double l, r;
+void get_input(){
+	FILE* config_fd;
+	if (myrank == 0){
+		config_fd = fopen("config", "r");
+		fscanf(config_fd, "l=%lf,r=%lf,count=%d", &l, &r, &count);
+	}
+	MPI_Bcast(&l, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&r, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&count, 1, MPI_INT, 0, MPI_COMM_WORLD);
 }
 
 int main(int argc, char* argv[]){
-	int myrank, size;
-	double *sum, interval, reduced = 0;
-	int l, r;
-	FILE* config_fd;
+	double local, interval, reduced = 0;
+	int block;
 
 	MPI_Init(&argc, &argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
 
-	config_fd = fopen("config", "r");
-	fscanf(config_fd, "%d%d", &l, &r);
+	get_input();
 
-	sum = (double*)malloc(sizeof (double) * size);
-	memset(sum, 0, sizeof(double) * size);
-	interval = (double)(r-l)/size;
-	sum[myrank] = trapezoid(myrank*interval, (myrank+1)*interval, x);
+	if (size > count){
+		MPI_Finalize();
+		return 1;
+	}
+	
+	interval = (r-l)/size;
+	block = count / size;
 
-	MPI_Reduce(sum, &reduced, size, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	func myfunc = sin;
+
+	if (count - block*(myrank+1) > 0 && count - block*(myrank+1) < block)
+		local = trapezoid(myrank*interval, (myrank+1)*interval, count - block*myrank, myfunc);
+	else
+		local = trapezoid(myrank*interval, (myrank+1)*interval, block, myfunc);
+
+	MPI_Reduce(&local, &reduced, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
 	if (myrank == 0){
 		printf("%lf\n", reduced);
 	}
 
-	free(sum);
 	MPI_Finalize();
 	return 0;
 }

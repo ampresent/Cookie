@@ -2,11 +2,14 @@ CC = /usr/bin/mpicc
 SRC = $(wildcard *.c)
 OBJ = $(SRC:%.c=%.o)
 EXE = $(SRC:%.c=%)
-INCLUDE = /usr/include/mpi
-FLAGS = -L/usr/lib/mpi -lmpi
+INCLUDE = -I/usr/include/openmpi
+FLAGS = -L/usr/lib/openmpi -lmpi -L/lib/x86_64-linux-gnu -lm
 
 objs: 3.mpi
-	$(CC) $(FLAGS) $(OBJ) -o $(EXE)
+	$(CC) $(OBJ) -o $(EXE) $(FLAGS) 
 
 3.mpi:
-	$(CC) -I$(INCLUDE) -c $(SRC)
+	$(CC) $(INCLUDE) -c $(SRC)
+
+clean:
+	rm -rf $(OBJ) $(EXE)
