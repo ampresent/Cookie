@@ -1,4 +1,4 @@
-CC = /usr/bin/mpicc
+CC = /usr/bin/gcc
 SRC = $(wildcard *.c)
 OBJ = $(SRC:%.c=%.o)
 EXE = $(SRC:%.c=%)

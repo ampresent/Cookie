@@ -6,6 +6,13 @@
 #include "mpi.h"
 #include "math.h"
 
+typedef struct{
+	double l, r;
+	int count;
+}Input;
+
+Input input;
+
 //GLOBAL
 int myrank, size;
 
@@ -15,21 +22,19 @@ void build_my_type(double *l, double *r, int *count, MPI_Datatype* newtype){
 	MPI_Aint l_addr, r_addr, count_addr;
 	MPI_Aint array_of_displacements[3] = {0};
 
-	MPI_Get_address(count, &count_addr);
+	printf("%p %p %p\n",l,r,count);
+
 	MPI_Get_address(l, &l_addr);
 	MPI_Get_address(r, &r_addr);
-	printf("%p %p %p\n",count,l,r);
-	array_of_displacements[1] = l_addr - count_addr;
-	array_of_displacements[2] = r_addr - l_addr;
+	MPI_Get_address(count, &count_addr);
+	array_of_displacements[1] = r_addr - l_addr;
+	array_of_displacements[2] = count_addr - l_addr;
 	MPI_Type_create_struct(3, array_of_blocklengths,
 			array_of_displacements, array_of_types, newtype);
 	MPI_Type_commit(newtype);
 }
 
 typedef double(*func)(double);
-
-int count;
-double l, r;
 
 double x(double x){
 	return x;
@@ -55,10 +60,10 @@ void get_input(){
 	MPI_Datatype newtype;
 	if (myrank == 0){
 		config_fd = fopen("config", "r");
-		fscanf(config_fd, "l=%lf,r=%lf,count=%d", &l, &r, &count);
+		fscanf(config_fd, "l=%lf,r=%lf,count=%d", &input.l, &input.r, &input.count);
 	}
-	build_my_type(&l, &r, &count, &newtype);
-	MPI_Bcast(&count, 1, newtype, 0, MPI_COMM_WORLD);
+	build_my_type(&input.l, &input.r, &input.count, &newtype);
+	MPI_Bcast(&input, 1, newtype, 0, MPI_COMM_WORLD);
 	MPI_Type_free(&newtype);
 }
 
@@ -72,23 +77,23 @@ int main(int argc, char* argv[]){
 	MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
 
 	get_input();
-	printf("myrank=%d\nl=%lf\tr=%lf\tcount=%d\n", myrank,l,r,count);
+	printf("%lf %lf %d\n",input.l,input.r,input.count);
 
-	if (size > count){
+	if (size > input.count){
 		MPI_Finalize();
 		return 1;
 	}
 	
-	interval = (r-l)/size;
-	block = count / size;
+	interval = (input.r-input.l)/size;
+	block = input.count / size;
 
 	func myfunc = sin;
 
 	if (block == 0){
 		local = 0;
 	}else{
-		if (count - block*(myrank+1) > 0 && count - block*(myrank+1) < block)
-			local = trapezoid(myrank*interval, (myrank+1)*interval, count - block*myrank, myfunc);
+		if (input.count - block*(myrank+1) > 0 && input.count - block*(myrank+1) < block)
+			local = trapezoid(myrank*interval, (myrank+1)*interval, input.count - block*myrank, myfunc);
 		else
 			local = trapezoid(myrank*interval, (myrank+1)*interval, block, myfunc);
 	}
