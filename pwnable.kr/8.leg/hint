@@ -1,0 +1,1 @@
+Crosscompile, qemu-arm -g to start a gdbserver, use arm gdb to debug remotely.Watch and compare with the origin leg.asm file.

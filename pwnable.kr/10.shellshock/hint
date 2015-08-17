@@ -1,0 +1,9 @@
+export x='() { :;}; ./bash'
+
+Environment variable parse error. What comes after () {:;};, which is an empty function, will be executed (arbitrary).
+Get the shellshock2 egid.
+Run ./shellshock, assign egid to ruid & rgid.
+
+Now wee have the ./bash previlige
+
+cat ./flag
