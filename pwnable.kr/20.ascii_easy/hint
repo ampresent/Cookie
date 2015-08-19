@@ -1,0 +1,20 @@
+Very tricky! ASLR can be disabled by 'ulimite -s unlimited' on 32-bit systems
+
+'setarch `uname -m` -R /bin/sh' works either way! (refered to manpage)
+
+But 'ulimite -s unlimited' restrict the image base within ASCII range
+
+Once disabled ASLR, every time 'ldd ./easy_ascii' gives the same result
+
+Now address of system & /bin/sh are fixed
+
+But we cat use pipe or redirect to pass input, unless we can delay the input,
+because the input will be obsorbed by getchar(), not sub-process. We may try to
+split inputs with '\n', but this terminates the process. The easiest way is to
+pass the input through keyboard(now that our payload consists only of ascii character)
+After the sub-process has started, we can pass in the command as input
+
+It's tempting to execute shellcode on the stack, however it's a pain to locate 0x08000000.
+Very easy to generates shellcode with only ascii chars (with msfencoder)
+
+I also learned to use coredump to locate the ret, (more convenient than look in the stack)

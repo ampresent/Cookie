@@ -1,0 +1,6 @@
+stack not executable
+Read&Write synchronization is fatal problem in pwn!!!
+Multiple reading, discriminate respective buffer
+Sometimes it won't stop on call, only because no breakpoint on the destination function
+Be careful with the function after we modified registers painfully
+After we modified esp or ebp, it's better not leave the authority to ret/leave

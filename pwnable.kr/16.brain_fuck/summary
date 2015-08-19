@@ -1,0 +1,15 @@
+A2B : transmit from python client to server
+B2A : transmit from server to python client
+
+'['	→ call   8048470 <puts@plt>
+					↓(A2B)
+ 08048430 <getchar@plt-0x10>:								(A2B)			(A2B)
+ 8048430:       ff 35 04 a0 04 08       pushl  0x804a004	*→	tape		*→		/bin/bash
+ 8048436:       ff 25 08 a0 04 08       jmp    *0x804a008 	*→	call   80484d0 <putchar@plt>
+																			↓(A2B)
+.plt:080484A0 ___libc_start_main
+.plt:080484A0 jmp			ds:off_804A024	*→	calc inside python	→	system
+											(B2A)					(A2B)
+
+
+I'm so stupid because /bin/sh was in libc

