@@ -1,0 +1,21 @@
+I've been stuck on this shit for days. Mostly traped by the byte-2-byte guessing and low entropy vulnerability...
+Firstly, byte-2-byte guessing only works under the circumstances that canary persists, (from master thread to slave thread, which mainly happens when fork() is used).
+Secondly, even though I think I can starve the main entropy pool by extracting entropy (cat /dev/random), I still don't have comprehensive knowledge of the secondary entropy of /dev/urandom. (Even I do, I'm not sure what algorithm the generator of /dev/urandom adopts. Unlike random, which we can read in glibc's source to know it adopts Linear Congruence Method or so. ) There's a BlackHat 2014 white paper on this issue, featuring low entropy vulnerability in Android system, resulted from the single canary problem.
+
+Well I racked my mind. How possibly can I bypass canary.
+I have no pointer on this stack whose value can be overwriten. So I have no chance to get an arbitrary write.
+I seemed to have no chance to leak value of canary, which locates right after last element of env ( int main(int argc, char** argv, char** env))
+The canary is not terminator canary, so not deterministic.
+
+Finally I noticed that there's one byte offset in the captcha generator, and the canary leaked.
+The reason why I didn't noticed it firstly is beacause I rely on Hex-Ray too much, and it didn't decompile this part correctly.
+The random seed is time(0), we can guess the seed in our exp. Then we can figure out the canary.
+
+-----------------------------------------------------------------------------
+boot_init_stack_canary() and _dl_setup_stack_chk_guard() retrieves from /dev/urandom and sets canary
+Found another excellent tool : strace
+A loop save my effort : while :;do nc.traditional -l -p 4000 -e ./hash; done
+socket.create_connection() is helpful
+b.Telnet(); t.sock = s; t.interact(); is helpful too
+We can also "{./exp;cat }|nc xxx xxx". cat intend to keep stdin open
+
